@@ -29,27 +29,43 @@ pacman::p_load(
 
 # The Philosophy: Tidy Data ----------------------------------------------------
 
+#     The 3 basic principles:
+#       1. Each variable forms a column
+#       2. Each observation forms a row
+#       3. Each type of observational unit forms a table.
+
 lotr <- data.frame(
-  race = c("hobbits", "hobbits", "elves", "hobbits", "dwarves", "men"),
-  character = c("Frodo", "Sam", "Arwen", "Golum", "Gimli", "Eowyn"),
-  gender = c("male", "male", "female", "male", "male", "female"),
-  `age_0-100` = c(1,1,0,0,0,1),
-  `age_100-500` = c(0,0,0,0,1,0),
-  `age_500-100` = c(0,0,0,1,0,0),
-  `age_>1000` = c(0, 0, 1, 0, 0, 0), 
-  check.names = FALSE
-)
-lotr
+                      race = c("hobbits", "hobbits", "elves", "hobbits", "dwarves", "men"),
+                      character = c("Frodo", "Sam", "Arwen", "Golum", "Gimli", "Eowyn"),
+                      gender = c("male", "male", "female", "male", "male", "female"),
+                      `age_0-100` = c(1,1,0,0,0,1),
+                      `age_100-500` = c(0,0,0,0,1,0),
+                      `age_500-100` = c(0,0,0,1,0,0),
+                      `age_>1000` = c(0, 0, 1, 0, 0, 0), 
+                      check.names = FALSE
+                  )
+
+lotr # What we see is messy data 
+
+# Now we want to make it tidy
 
 lotr <- lotr %>%
-  pivot_longer(4:7, names_to = "age_cat", values_to = "classifier") %>%
-  filter(classifier == 1) %>%
-  select(-classifier) %>%
-  mutate(age_cat = str_remove(age_cat, "age_"))
+      pivot_longer(4:7, names_to = "age_cat", values_to = "classifier") %>%  
+#             pivot_longer () - this functions lengthens data, increases the number of rows, 
+#             and decreases the number of columns, the inverse of this is pivot wider ()
+#             syntax is like - 
+#                                 pivot_longer (
+#                                            data,
+#                                            cols,
+#                                            values_to = "value",
+#                                            )
+#             See more at: https://tidyr.tidyverse.org/reference/pivot_longer.html
+      filter(classifier == 1) %>%
+#           When applied to a data frame, row names are silently dropped. 
+      select(-classifier) %>%
+      mutate(age_cat = str_remove(age_cat, "age_"))
 
-as.data.frame(lotr)
-
-
+lotr # What we see is tidy data 
 
 # Tibbles ----------------------------------------------------------------------
 
@@ -78,10 +94,15 @@ Z <- import("mtcars.json")
 # Exporting/importing several data frames: export_list()/import_list()
 
 # Make a list of two built-in data sets.
+
 # tibble::lst() automatically names the elements:
+
 df_list <- tibble::lst(mtcars, iris)
 
+df_list
+
 export_list(df_list, file = paste0(names(df_list), ".csv"))
+
 # export_file takes a character vector; hence, we build one from the names of our element
 # With the paste0() we paste ".csv" to every element of the character vector
 # produced by names(df_list).
@@ -123,6 +144,8 @@ parlgov_elec <- import("http://www.parlgov.org/static/data/development-cp1252/vi
 
 
 glimpse(parlgov_elec) # enhanced version of str()
+
+# We see that the data set has 6 rows and 2 columns
 
 
 head(parlgov_elec, 10)
