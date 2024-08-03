@@ -23,8 +23,8 @@ pacman::p_load(
   DT,
   modelsummary,
   collapse,
-  forcats
-
+  forcats,
+  readr
 )
 
 # The Philosophy: Tidy Data ----------------------------------------------------
@@ -137,33 +137,36 @@ Sys.setenv("_R_USE_PIPEBIND_" = "true")
 "Ceci n&#37;est pas une pipe" |> . => gsub("&#37;", "'", .)
 
 
-
 # The Data ---------------------------------------------------------------------
 
-parlgov_elec <- import("http://www.parlgov.org/static/data/development-cp1252/view_election.csv")
+# import the data 
 
+parlgov_elec <- view_election <- read_csv("Data/view_election.csv")
+
+# view the data 
 
 glimpse(parlgov_elec) # enhanced version of str()
 
-# We see that the data set has 6 rows and 2 columns
+# We see that the data set has 8997 rows and 16 columns, which means there are 
+# 16 variables and 8997 observations
 
+head(parlgov_elec, 10) # view a smaller version (10 rows instead of 8997, and 16 columns)
 
-head(parlgov_elec, 10)
+datasummary_skim(parlgov_elec) # from modelsummary package. 
 
-# datasummary_skim(parlgov_elec) # from modelsummary package. Set 
-# type = "categorical" for character vars.
-
-# Of course, not super informative in our hierarchical data set:
-
-datasummary_skim(parlgov_elec)
+# Set type = "categorical" for character vars.
 
 
 # Filtering Rows ---------------------------------------------------------------
 
-parlgov_elec_de <- parlgov_elec %>% # add, e.g., _de if we want to keep our original df 
-  filter(country_name_short == "DEU")
+parlgov_elec_de <- parlgov_elec %>% filter(country_name_short == "DEU")
 
+# add, e.g., _de if we want to keep our original df 
 
+parlgov_elec_de
+
+# we have filtered out all obs except Germany (DEU)
+                                  
 parlgov_elec_de %>% # add, e.g., _de if we want to keep our original df
   filter(party_name_short == "SPD", election_type == "parliament") %>%
   mean(vote_share)
@@ -171,60 +174,74 @@ parlgov_elec_de %>% # add, e.g., _de if we want to keep our original df
 
 # pull() -----------------------------------------------------------------------
 
-parlgov_elec_de %>% # add, e.g., _de if we want to keep our original df
+parlgov_elec_de %>% 
   filter(party_name_short == "SPD", election_type == "parliament") %>%
-  pull(vote_share) %>% 
-  mean()
+    mean() # this does not work because base R's summary stats functions like 
+           # mean () cannot take a df or tibble. So we need to wrap it into a
+           # dplyr function which will be pull () as we see below -
+
+parlgov_elec_de %>% 
+      filter(party_name_short == "SPD", election_type == "parliament") %>%
+        pull(vote_share) %>% 
+            mean()
+
+# OR we can wrap mean () into the summarise () function 
 
 # summarise() ------------------------------------------------------------------
 
-parlgov_elec_de %>%
+parlgov_elec_de %>% 
   filter(party_name_short == "SPD", election_type == "parliament") %>%
-  summarise(mean(vote_share)) # summarise() takes summary functions such as mean(), sd(), etc.
+    summarise(mean(vote_share))
 
+# We can use summarise () to compute more summary statistics like - 
 
-parlgov_elec_de %>%
+parlgov_elec_de %>% 
   filter(party_name_short == "SPD", election_type == "parliament") %>%
-  summarise(mean = mean(vote_share), sd = sd(vote_share), n = n())
+  summarise (mean = mean (vote_share), sd = sd (vote_share), n = n())
 
 # Aside: you can also get the number of rows (in a group) by using the base 
 # function nrow(.) with a placeholder in the above pipe.
 
+parlgov_elec_de %>% 
+  filter(party_name_short == "SPD", election_type == "parliament") %>%
+  summarise (mean = mean (vote_share), sd = sd (vote_share), n = n(), nrow = nrow(.))
 
 # mutate() ---------------------------------------------------------------------
 
-parlgov_elec_de <- parlgov_elec_de %>% # here, we "overwrite" our df
+# We can use mutate () to overwrite variables, for example, we can overwrite ()
+# the election_date variable with a new variable (column) 'year'
+
+parlgov_elec_de <- parlgov_elec_de %>%
   mutate(year = lubridate::year(election_date))
-
-
 
 # select() and arrange() -------------------------------------------------------
 
 parlgov_elec_de %>%
-  filter(year == 2017) %>%
-  select(party_name_short, vote_share, left_right) %>% 
-  arrange(desc(left_right)) #default is ascending; we can wrap the masked vector 
-  # with desc() to sort descending
-
-
+  filter(year == 2017) %>% # the year 2017 is selected
+    select(party_name_short, vote_share, left_right) %>% # some variables are chosen
+      arrange(desc(left_right)) # then they are sorted - default is ascending; 
+                                # we can wrap the masked vector with desc() to sort descending
 
 # group_by() -------------------------------------------------------------------
 
 parlgov_elec %>%
-  filter(election_type == "parliament") %>% 
-  group_by(country_name_short) %>%
-  summarise(share_max = max(vote_share, na.rm = T), 
-            party = party_name_english[1],
-            election_date = election_date[1]
-            ) %>%  # note the "collapsing" I mentioned earlier
-  arrange(desc(share_max))
-
+  filter (election_type == "parliament") %>% 
+    group_by (country_name_short) %>%
+        summarise (share_max = max (vote_share, na.rm = T), 
+                      party = party_name_english[1],
+                          election_date = election_date[1]
+                  ) %>%  # note the "collapsing" I mentioned earlier
+                      arrange(desc(share_max))
+# This tells us the parties that got the most votes EVER in a parliamentary election
+# BY country
 
 
 parlgov_elec <- parlgov_elec %>%
   group_by(country_id) %>%
   mutate(max_seats = max(seats_total)) %>%
   ungroup() # to remove the grouping
+
+# This gives us the total number of seats in countries with parliamentary systems
 
 
 parlgov_elec %>%
