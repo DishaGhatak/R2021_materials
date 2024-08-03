@@ -232,6 +232,7 @@ parlgov_elec %>%
                           election_date = election_date[1]
                   ) %>%  # note the "collapsing" I mentioned earlier
                       arrange(desc(share_max))
+
 # This tells us the parties that got the most votes EVER in a parliamentary election
 # BY country
 
